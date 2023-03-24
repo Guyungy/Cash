@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>BNB混币器</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- 引入web3.min.js和BNB混币器合约的ABI -->
+	<script src="https://cdn.jsdelivr.net/gh/ethereum/web3.js/dist/web3.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/gh/binance-chain/bsc@1.1.0-beta.0/dist/web3.min.js"></script>
+	<script src="abi.js"></script>
+</head>
+<body>
+	<header>
+		<h1>BNB混币器</h1>
+	</header>
+	<main>
+		<section>
+			<h2>连接钱包</h2>
+			<p>请先安装Metamask钱包，并切换至BSC网络。</p>
+			<button id="connectBtn">连接钱包</button>
+			<p id="account">钱包地址：未连接</p>
+		</section>
+		<section>
+			<h2>混币</h2>
+			<form id="mixForm">
+				<label for="amount">选择混币数量：</label>
+				<select id="amount">
+					<option value="0.5">0.5 BNB</option>
+					<option value="1">1 BNB</option>
+					<option value="5">5 BNB</option>
+					<option value="10">10 BNB</option>
+				</select>
+				<br>
+				<button type="submit">混币</button>
+			</form>
+			<p id="mixResult"></p>
+		</section>
+		<section>
+			<h2>提币</h2>
+			<form id="withdrawForm">
+				<label for="withdrawAmount">提币数量：</label>
+				<input type="number" id="withdrawAmount" min="0.1" step="0.1" required>
+				<br>
+				<label for="withdrawAddress">提币地址：</label>
+				<input type="text" id="withdrawAddress" required>
+				<br>
+				<button type="submit">提币</button>
+			</form>
+			<p id="withdrawResult"></p>
+		</section>
+	</main>
+	<script>
+		// 初始化web3对象
+		var web3 = new Web3(window.web3.currentProvider);
+
+		// 获取混币器合约对象
+		var mixContract = new web3.eth.Contract(abi, '0x合约地址');
+
+		// 连接钱包
+		document.getElementById('connectBtn').addEventListener('click', function() {
+			window.ethereum.enable().then(function(accounts) {
+				// 显示钱包地址
+				document.getElementById('account').innerText = '钱包地址：' + accounts[0];
+			});
+		});
+
+		// 混币
+		document.getElementById('mixForm').addEventListener('submit', function(event) {
+			event.preventDefault();
+			var amount = document.getElementById('amount').value;
+		// 调用混币器合约的mix函数
+		mixContract.methods.mix().send({
+			from: web3.eth.defaultAccount,
+			value: web3.utils.toWei(amount, 'ether')
+		}).then(function(receipt) {
+			// 显示混币结果
+			document.getElementById('mixResult').innerText = '混币成功，交易哈希：' + receipt.transactionHash;
+		}).catch(function(error) {
+			console.error(error);
+			// 显示混币失败信息
+			document.getElementById('mixResult').innerText = '混币失败：' + error.message;
+		});
+	});
+
+	// 提币
+	document.getElementById('withdrawForm').addEventListener('submit', function(event) {
+		event.preventDefault();
+		var withdrawAmount = document.getElementById('withdrawAmount').value;
+		var withdrawAddress = document.getElementById('withdrawAddress').value;
+		// 调用混币器合约的withdraw函数
+		mixContract.methods.withdraw(web3.utils.toWei(withdrawAmount, 'ether'), withdrawAddress).send({
+			from: web3.eth.defaultAccount
+		}).then(function(receipt) {
+			// 显示提币结果
+			document.getElementById('withdrawResult').innerText = '提币成功，交易哈希：' + receipt.transactionHash;
+		}).catch(function(error) {
+			console.error(error);
+			// 显示提币失败信息
+			document.getElementById('withdrawResult').innerText = '提币失败：' + error.message;
+		});
+	});
+</script>
